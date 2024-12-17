@@ -63,61 +63,53 @@ def format_geneinfo(prodigal_out):
         
 
 def anno_metaG(data_folder, analysis_folder):
-    '''
-    Fix the format for the shortened metaG info input
-    '''
     import pandas as pd
 
-    # generating correspondence list of access and genes    
-    corrlist = f'{analysis_folder}/AMPsphere_GMSC_correspondence.tsv.gz'
-    corrlist = pd.read_table(corrlist, sep='\t', header='infer')
-    corrlist = corrlist[['accession', 'genes']]
-    corrlist = corrlist.set_index('accession')
-    corrlist['genes'] = [x.split(',') for x in corrlist.genes]
+    # Load the correspondence list
+    corrlist = pd.read_table(f'{analysis_folder}/AMPsphere_GMSC_correspondence.tsv.gz', sep='\t')
+    corrlist['genes'] = corrlist['genes'].apply(lambda x: x.split(','))
+    dictresource = {gene: acc for acc, genes in corrlist.set_index('accession')['genes'].iteritems() for gene in genes}
 
-    dictresource = dict()
-    for f in corrlist.itertuples():
-        for x in f[1]: dictresource[x] = f[0]
+    # Define the new columns
+    columns = ['accession', 'gmsc', 'sample', 'contig', 'start', 'stop', 'strand', 'fid', 'partial', 'start_type', 'rbs_motif', 'rbs_spacer', 'gc_cont']
 
-    dictresource = pd.DataFrame.from_dict(dictresource, orient='index')
-    dictresource = dictresource.reset_index()
-    dictresource = dictresource.rename({'index': 0, 0: 1}, axis=1)
-    
-    columns = ['accession', 'gmsc', 'sample', 'contig', 'start', 'stop', 'strand', 
-               'fid', 'partial', 'start_type', 'rbs_motif',
-               'rbs_spacer', 'gc_cont']
+    # Initialize DataFrame to store the new rows
+    newdf = pd.DataFrame(columns=columns)
 
-    newdf = pd.DataFrame()
+    # Process the input file
     infile = f'{data_folder}/shortened_renaming.txt.gz'
-    
-    # Before processing check columns and count
-    for idx, record in enumerate(pd.read_table(infile, sep='\t', header=None, chunksize=500_000)):
-        print(record.columns)  # Print column names
-        print(len(record.columns))  # Print column count
-        break  # Only check the first chunk
-        
-    for idx, record in enumerate(pd.read_table(infile,
-                                               sep='\t',
-                                               header=None,
-                                               chunksize=500_000)):
-        record = record.merge(on=0, right=dictresource)
-        record = [format_geneinfo(f) for f in record.itertuples()]
-        df = pd.DataFrame(record, columns=columns)
-        newdf = pd.concat([newdf, df])
+    data = pd.read_table(infile, sep='\t', header=None, names=['gmsc', 'sample', 'original_header'])
 
+    # Split and expand the 'original_header' column
+    details = data['original_header'].str.extract(r'# (\d+) # (\d+) # (-?1) # ID=(.+?);partial=(.+?);start_type=(.+?);rbs_motif=(.+?);rbs_spacer=(.+?);gc_cont=(\d+\.\d+)')
+    details.columns = ['start', 'stop', 'strand', 'fid', 'partial', 'start_type', 'rbs_motif', 'rbs_spacer', 'gc_cont']
+    data = pd.concat([data.drop(columns=['original_header']), details], axis=1)
+
+    # Convert the dataframe into the correct format
+    for idx, row in data.iterrows():
+        if row['gmsc'] in dictresource:
+            new_row = { 
+                'accession': dictresource[row['gmsc']],
+                'gmsc': row['gmsc'],
+                'sample': row['sample'],
+                'contig': '_'.join(row['gmsc'].split('_')[0:2]),
+                'start': row['start'],
+                'stop': row['stop'],
+                'strand': row['strand'],
+                'fid': row['fid'],
+                'partial': row['partial'],
+                'start_type': row['start_type'],
+                'rbs_motif': row['rbs_motif'],
+                'rbs_spacer': row['rbs_spacer'],
+                'gc_cont': row['gc_cont']
+            }
+            newdf = newdf.append(new_row, ignore_index=True)
+
+    # Save the modified dataframe
     ofile = f'{analysis_folder}/AMPsphere_metaG_annotation.tsv.gz'
-    
-    newdf = newdf.sort_values(by=['accession',
-                                  'gmsc',
-                                  'sample'],
-                              ascending=[True,
-                                         True,
-                                         True])
-                                         
-    newdf.to_csv(ofile,
-                 sep='\t',
-                 header=True,
-                 index=None)
+    newdf.to_csv(ofile, sep='\t', header=True, index=False)
+
+
 
 
 def origins(data_folder, analysis_folder):
