@@ -89,6 +89,13 @@ def anno_metaG(data_folder, analysis_folder):
 
     newdf = pd.DataFrame()
     infile = f'{data_folder}/shortened_renaming.txt.gz'
+    
+    # Before processing check columns and count
+    for idx, record in enumerate(pd.read_table(infile, sep='\t', header=None, chunksize=500_000)):
+        print(record.columns)  # Print column names
+        print(len(record.columns))  # Print column count
+        break  # Only check the first chunk
+        
     for idx, record in enumerate(pd.read_table(infile,
                                                sep='\t',
                                                header=None,
