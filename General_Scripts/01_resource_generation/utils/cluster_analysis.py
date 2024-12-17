@@ -90,7 +90,7 @@ def alignments(select_fam, analysis_folder):
                         '-output', ofile,
                         '-maxiters', '1',
                         '-diags',
-                        ])
+                        ]))
 
 def trees(select_fam, analysis_folder):
     '''
