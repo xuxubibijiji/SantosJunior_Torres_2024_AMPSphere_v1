@@ -15,7 +15,7 @@ def startup(data_folder, analysis_folder):
 
     ref = ref.rename({'sequence': 'Sequence'}, axis=1)
     
-    specI = pd.read_table(f'{data_folder}/pgenomes_samples.tsv.gz', 
+    specI = pd.read_table(f'{data_folder}/pgenomes_samples.tsv', 
                           sep='\t', header=None, names=['specI', 'genome'])
 
     listed_genomes = f'{data_folder}/combinedVsearch3.50p.20n.norm.opt.0.042.filteredBlackList.map.xz'
