@@ -68,46 +68,31 @@ def anno_metaG(data_folder, analysis_folder):
     # Load the correspondence list
     corrlist = pd.read_table(f'{analysis_folder}/AMPsphere_GMSC_correspondence.tsv.gz', sep='\t')
     corrlist['genes'] = corrlist['genes'].apply(lambda x: x.split(','))
-    dictresource = {gene: acc for acc, genes in corrlist.set_index('accession')['genes'].iteritems() for gene in genes}
 
-    # Define the new columns
+    dictresource = {}
+    for index, row in corrlist.iterrows():
+        for gene in row['genes']:
+            dictresource[gene] = row['accession']
+
     columns = ['accession', 'gmsc', 'sample', 'contig', 'start', 'stop', 'strand', 'fid', 'partial', 'start_type', 'rbs_motif', 'rbs_spacer', 'gc_cont']
-
-    # Initialize DataFrame to store the new rows
     newdf = pd.DataFrame(columns=columns)
 
-    # Process the input file
     infile = f'{data_folder}/shortened_renaming.txt.gz'
-    data = pd.read_table(infile, sep='\t', header=None, names=['gmsc', 'sample', 'original_header'])
+    data_chunks = pd.read_table(infile, sep='\t', header=None, names=['gmsc', 'sample', 'original_header'], chunksize=500_000)
 
-    # Split and expand the 'original_header' column
-    details = data['original_header'].str.extract(r'# (\d+) # (\d+) # (-?1) # ID=(.+?);partial=(.+?);start_type=(.+?);rbs_motif=(.+?);rbs_spacer=(.+?);gc_cont=(\d+\.\d+)')
-    details.columns = ['start', 'stop', 'strand', 'fid', 'partial', 'start_type', 'rbs_motif', 'rbs_spacer', 'gc_cont']
-    data = pd.concat([data.drop(columns=['original_header']), details], axis=1)
+    for chunk in data_chunks:
+        expanded_details = chunk['original_header'].str.extract(r'# (\d+) # (\d+) # (-?1) # ID=(.+?);partial=(.+?);start_type=(.+?);rbs_motif=(.+?);rbs_spacer=(.+?);gc_cont=(\d+\.\d+)')
+        expanded_details.columns = ['start', 'stop', 'strand', 'fid', 'partial', 'start_type', 'rbs_motif', 'rbs_spacer', 'gc_cont']
+        chunk = pd.concat([chunk.drop(columns=['original_header']), expanded_details], axis=1)
 
-    # Convert the dataframe into the correct format
-    for idx, row in data.iterrows():
-        if row['gmsc'] in dictresource:
-            new_row = { 
-                'accession': dictresource[row['gmsc']],
-                'gmsc': row['gmsc'],
-                'sample': row['sample'],
-                'contig': '_'.join(row['gmsc'].split('_')[0:2]),
-                'start': row['start'],
-                'stop': row['stop'],
-                'strand': row['strand'],
-                'fid': row['fid'],
-                'partial': row['partial'],
-                'start_type': row['start_type'],
-                'rbs_motif': row['rbs_motif'],
-                'rbs_spacer': row['rbs_spacer'],
-                'gc_cont': row['gc_cont']
-            }
-            newdf = newdf.append(new_row, ignore_index=True)
+        # Convert the dataframe into the correct format
+        chunk['accession'] = chunk['gmsc'].map(dictresource)
+        newdf = pd.concat([newdf, chunk], ignore_index=True)
 
     # Save the modified dataframe
     ofile = f'{analysis_folder}/AMPsphere_metaG_annotation.tsv.gz'
     newdf.to_csv(ofile, sep='\t', header=True, index=False)
+    print(f"Data written to {ofile}")
 
 
 
