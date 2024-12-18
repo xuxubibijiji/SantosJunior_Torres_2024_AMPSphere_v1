@@ -98,11 +98,12 @@ def alignments(select_fam, analysis_folder):
         # 调用 muscle
         subprocess.check_call([
             muscle_path,
-            '-align', ifile,
-            '-output', ofile,
+            '-in', ifile,
+            '-out', ofile,
             '-maxiters', '1',
             '-diags'
         ])
+
 
 
 def trees(select_fam, analysis_folder):
