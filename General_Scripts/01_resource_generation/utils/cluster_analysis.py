@@ -72,25 +72,38 @@ def fasta_files(lv3, select_fam, analysis_folder):
                 db.write(f'>{row.access}\n{row.sequence}\n')
 
 
-def alignments(select_fam, analysis_folder):
+def alignments(select_fam, analysis_folder): 
     '''
     Computes alignments from
     the fasta files generated
     before
     '''
     import subprocess
-    for f in select_fam:
-        f = 'SPHERE-III.000_002'
-        ifile = f'{analysis_folder}/families/fastas/{f}.faa'
-        ofile = f'{analysis_folder}/families/aln/{f}.aln'
+    import os
 
-        subprocess.check_call(
-                ' '.join(['muscle',
-                        '-align', ifile,
-                        '-output', ofile,
-                        '-maxiters', '1',
-                        '-diags',
-                        ]))
+    # 检查 muscle 的可执行文件路径
+    muscle_path = subprocess.run(["which", "muscle"], stdout=subprocess.PIPE, text=True).stdout.strip()
+    if not muscle_path:
+        raise FileNotFoundError("muscle executable not found. Please install muscle or check its PATH.")
+
+    for f in select_fam:
+        f = 'SPHERE-III.000_002'  # 示例文件名
+        ifile = os.path.join(analysis_folder, 'families/fastas', f"{f}.faa")
+        ofile = os.path.join(analysis_folder, 'families/aln', f"{f}.aln")
+
+        # 检查输入文件是否存在
+        if not os.path.exists(ifile):
+            raise FileNotFoundError(f"Input file not found: {ifile}")
+
+        # 调用 muscle
+        subprocess.check_call([
+            muscle_path,
+            '-align', ifile,
+            '-output', ofile,
+            '-maxiters', '1',
+            '-diags'
+        ])
+
 
 def trees(select_fam, analysis_folder):
     '''
