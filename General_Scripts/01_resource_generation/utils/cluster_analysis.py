@@ -72,10 +72,10 @@ def fasta_files(lv3, select_fam, analysis_folder):
                 db.write(f'>{row.access}\n{row.sequence}\n')
 
 
-def alignments(analysis_folder):
+def alignments(analysis_folder, select_fam=None): 
     '''
     Computes alignments from
-    all the .faa files in the specified folder
+    all the .faa files in the specified folder or a selected subset
     '''
     import subprocess
     import os
@@ -91,10 +91,20 @@ def alignments(analysis_folder):
     output_folder = os.path.join(analysis_folder, 'families/aln')
 
     # 获取所有 .faa 文件的路径
-    fasta_files = glob(os.path.join(input_folder, '*.faa'))
+    if select_fam:
+        # 仅处理指定的文件名
+        fasta_files = [os.path.join(input_folder, f"{name}.faa") for name in select_fam]
+    else:
+        # 处理所有 .faa 文件
+        fasta_files = glob(os.path.join(input_folder, '*.faa'))
 
-    # 遍历所有 .faa 文件
+    # 遍历所有指定的 .faa 文件
     for ifile in fasta_files:
+        # 检查输入文件是否存在
+        if not os.path.exists(ifile):
+            print(f"Warning: Input file not found: {ifile}")
+            continue
+
         # 提取文件名用于输出文件命名
         filename = os.path.basename(ifile)
         file_stem = os.path.splitext(filename)[0]  # 去掉扩展名
@@ -111,6 +121,7 @@ def alignments(analysis_folder):
             '-maxiters', '1',
             '-diags'
         ])
+
 
 
 def trees(select_fam, analysis_folder):
