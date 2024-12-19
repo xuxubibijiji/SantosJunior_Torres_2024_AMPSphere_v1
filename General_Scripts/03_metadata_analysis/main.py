@@ -40,3 +40,6 @@ def main():
     print('Adding metadata info and consolidating data')
     hrenvo()
     
+ # 添加这一行，调用 main 函数
+if __name__ == "__main__":
+    main()   
