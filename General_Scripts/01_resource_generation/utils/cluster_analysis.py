@@ -72,45 +72,35 @@ def fasta_files(lv3, select_fam, analysis_folder):
                 db.write(f'>{row.access}\n{row.sequence}\n')
 
 
-def alignments(analysis_folder, select_fam=None): 
+def alignments(select_fam, analysis_folder): 
     '''
     Computes alignments from
-    all the .faa files in the specified folder or a selected subset
+    the fasta files generated
+    before
     '''
     import subprocess
     import os
-    from glob import glob
+
+    # 确保 analysis_folder 是字符串
+    if isinstance(analysis_folder, list):
+        if len(analysis_folder) == 1:
+            analysis_folder = analysis_folder[0]  # 使用列表中的第一个元素
+        else:
+            raise ValueError("analysis_folder should be a string, but a list with multiple elements was provided.")
 
     # 检查 muscle 的可执行文件路径
     muscle_path = subprocess.run(["which", "muscle"], stdout=subprocess.PIPE, text=True).stdout.strip()
     if not muscle_path:
         raise FileNotFoundError("muscle executable not found. Please install muscle or check its PATH.")
 
-    # 定义输入和输出文件夹
-    input_folder = os.path.join(analysis_folder, 'families/fastas')
-    output_folder = os.path.join(analysis_folder, 'families/aln')
+    for f in select_fam:
+        ifile = f'{analysis_folder}/families/fastas/{f}.faa'
+        ofile = f'{analysis_folder}/families/aln/{f}.aln'
 
-    # 获取所有 .faa 文件的路径
-    if select_fam:
-        # 仅处理指定的文件名
-        fasta_files = [os.path.join(input_folder, f"{name}.faa") for name in select_fam]
-    else:
-        # 处理所有 .faa 文件
-        fasta_files = glob(os.path.join(input_folder, '*.faa'))
-
-    # 遍历所有指定的 .faa 文件
-    for ifile in fasta_files:
         # 检查输入文件是否存在
         if not os.path.exists(ifile):
             print(f"Warning: Input file not found: {ifile}")
             continue
-
-        # 提取文件名用于输出文件命名
-        filename = os.path.basename(ifile)
-        file_stem = os.path.splitext(filename)[0]  # 去掉扩展名
-
-        # 输出文件路径
-        ofile = os.path.join(output_folder, f"{file_stem}.aln")
 
         # 调用 muscle
         print(f"Processing file: {ifile} -> {ofile}")
@@ -121,7 +111,6 @@ def alignments(analysis_folder, select_fam=None):
             '-maxiters', '1',
             '-diags'
         ])
-
 
 
 def trees(select_fam, analysis_folder):
