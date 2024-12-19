@@ -1,3 +1,7 @@
+import sys
+import os
+sys.path.append(os.path.join(os.getcwd(), "utils"))
+
 #from utils.download_files import inputsgen
 from utils.gtdb2pgenomes import conversion_from_GTDB_to_pGenomes
 from utils.preprocess import filtermmseqs2_amp_contig
