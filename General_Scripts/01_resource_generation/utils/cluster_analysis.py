@@ -72,30 +72,38 @@ def fasta_files(lv3, select_fam, analysis_folder):
                 db.write(f'>{row.access}\n{row.sequence}\n')
 
 
-def alignments(select_fam, analysis_folder): 
+def alignments(analysis_folder):
     '''
     Computes alignments from
-    the fasta files generated
-    before
+    all the .faa files in the specified folder
     '''
     import subprocess
     import os
+    from glob import glob
 
     # 检查 muscle 的可执行文件路径
     muscle_path = subprocess.run(["which", "muscle"], stdout=subprocess.PIPE, text=True).stdout.strip()
     if not muscle_path:
         raise FileNotFoundError("muscle executable not found. Please install muscle or check its PATH.")
 
-    for f in select_fam:
-        f = 'SPHERE-III.000_002'  # 示例文件名
-        ifile = os.path.join(analysis_folder, 'families/fastas', f"{f}.faa")
-        ofile = os.path.join(analysis_folder, 'families/aln', f"{f}.aln")
+    # 定义输入和输出文件夹
+    input_folder = os.path.join(analysis_folder, 'families/fastas')
+    output_folder = os.path.join(analysis_folder, 'families/aln')
 
-        # 检查输入文件是否存在
-        if not os.path.exists(ifile):
-            raise FileNotFoundError(f"Input file not found: {ifile}")
+    # 获取所有 .faa 文件的路径
+    fasta_files = glob(os.path.join(input_folder, '*.faa'))
+
+    # 遍历所有 .faa 文件
+    for ifile in fasta_files:
+        # 提取文件名用于输出文件命名
+        filename = os.path.basename(ifile)
+        file_stem = os.path.splitext(filename)[0]  # 去掉扩展名
+
+        # 输出文件路径
+        ofile = os.path.join(output_folder, f"{file_stem}.aln")
 
         # 调用 muscle
+        print(f"Processing file: {ifile} -> {ofile}")
         subprocess.check_call([
             muscle_path,
             '-in', ifile,
@@ -103,7 +111,6 @@ def alignments(select_fam, analysis_folder):
             '-maxiters', '1',
             '-diags'
         ])
-
 
 
 def trees(select_fam, analysis_folder):
