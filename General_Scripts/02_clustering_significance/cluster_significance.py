@@ -199,8 +199,16 @@ def align_to_representative(sample_df):
     return out
 
 
-def cluster_analysis():
+def cluster_analysis(): 
+    import os
     import pandas as pd
+
+    # 创建 outputs 目录
+    outputs_dir = "/content/SantosJunior_Torres_2024_AMPSphere_v1/General_Scripts/02_clustering_significance/outputs"
+    if not os.path.exists(outputs_dir):
+        os.makedirs(outputs_dir)
+        print(f"Created missing directory: {outputs_dir}")
+
     print('load info')
     clusters = clusters_load()
     print('select representatives')
