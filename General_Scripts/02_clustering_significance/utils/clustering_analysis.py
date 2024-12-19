@@ -4,7 +4,7 @@ import gzip
 from Bio import SeqIO
 import math
 
-def seqload(file_path='../../data_folder/sequences.faa.gz'):
+def seqload(file_path='../../data_folder/AMPSphere_v.2022-03.faa.gz'):
     """
     Load sequences from a gzipped FASTA file.
     :param file_path: Path to the gzipped FASTA file containing sequences.
